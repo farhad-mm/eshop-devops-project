@@ -1,0 +1,14 @@
+Die Starteinstellungen von C:\Users\Null\Documents\eshop-devops-project\src\src\eShop.AppHost\Properties\launchSettings.json werden verwendet…
+Buildvorgang wird ausgeführt...
+info: Aspire.Hosting.DistributedApplication[0]
+      Aspire version: 13.2.0+1b339b0aab41b049e8e0d21ed1a79596cf8b8509
+info: Aspire.Hosting.DistributedApplication[0]
+      Distributed application starting.
+info: Aspire.Hosting.DistributedApplication[0]
+      Application host directory is: C:\Users\Null\Documents\eshop-devops-project\src\src\eShop.AppHost
+info: Aspire.Hosting.DistributedApplication[0]
+      Now listening on: https://localhost:19888
+info: Aspire.Hosting.DistributedApplication[0]
+      Login to the dashboard at https://localhost:19888/login?t=baf33d6fd081cd06dde13408228c94b4
+info: Aspire.Hosting.DistributedApplication[0]
+      Distributed application started. Press Ctrl+C to shut down.

@@ -3,7 +3,6 @@
 A DevOps engineering project built around Microsoft's [dotnet/eShop](https://github.com/dotnet/eShop) reference application, demonstrating containerization, orchestration, CI/CD automation, infrastructure as code, monitoring, and security practices for a real-world microservices system.
 
 This project was built as a graduation project to demonstrate production-grade software delivery practices used by real DevOps and cloud engineering teams.
-
 ## Overview
 
 This project takes Microsoft's eShop reference microservices application and wraps it with a full DevOps delivery pipeline. The core services included in scope are:
