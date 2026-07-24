@@ -2,21 +2,49 @@
 bin/
 obj/
 artifacts/
+out/
 *.user
+*.userosscache
+*.suo
+*.userprefs
+
+# NuGet
+*.nupkg
+**/packages/*
+!**/packages/build/
+*.nuget.props
+*.nuget.targets
 
 # Visual Studio / VS Code
 .vs/
 .vscode/*
 !.vscode/extensions.json
+*.vspscc
+*.vssscc
+.builds
+
+# Test results
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+*.coveragexml
+
+# Rider / JetBrains
+.idea/
 
 # OS files
 .DS_Store
 Thumbs.db
+ehthumbs.db
 
 # Environment/secrets
 .env
 *.env.local
+appsettings.*.local.json
 
 # Logs
 *.log
 run-log.txt
+
+# Docker
+docker-compose.override.yml
