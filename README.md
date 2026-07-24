@@ -1,142 +1,62 @@
-# eShop Reference Application - "AdventureWorks"
+# eShop DevOps Project
 
-A reference .NET application implementing an e-commerce website using a services-based architecture using [.NET Aspire](https://learn.microsoft.com/dotnet/aspire/).
+A DevOps engineering project built around Microsoft's [dotnet/eShop](https://github.com/dotnet/eShop) reference application, demonstrating containerization, orchestration, CI/CD automation, infrastructure as code, monitoring, and security practices for a real-world microservices system.
 
-![eShop Reference Application architecture diagram](img/eshop_architecture.png)
+This project was built as a graduation project to demonstrate production-grade software delivery practices used by real DevOps and cloud engineering teams.
 
-![eShop homepage screenshot](img/eshop_homepage.png)
+## Overview
 
-## Getting Started
+This project takes Microsoft's eShop reference microservices application and wraps it with a full DevOps delivery pipeline. The core services included in scope are:
 
-This version of eShop is based on .NET 9. 
+- **Catalog.API** — product catalog management
+- **Basket.API** — shopping cart, backed by Redis
+- **Ordering.API** — order placement and tracking
 
-Previous eShop versions:
-* [.NET 8](https://github.com/dotnet/eShop/tree/release/8.0)
+Bonus services included where time allows: Identity.API (authentication), WebApp (storefront UI), OrderProcessor/PaymentProcessor (event-driven background services).
 
-### Prerequisites
+The application uses PostgreSQL with the pgvector extension (one database per service), Redis (basket cache), and RabbitMQ (event bus for inter-service communication).
 
-- Clone the eShop repository: https://github.com/dotnet/eshop
-- [Install & start Docker Desktop](https://docs.docker.com/engine/install/)
+## Architecture
+*(to be completed — Sprint 3)*
 
-#### Windows with Visual Studio
-- Install [Visual Studio 2022 version 17.10 or newer](https://visualstudio.microsoft.com/vs/).
-  - Select the following workloads:
-    - `ASP.NET and web development` workload.
-    - `.NET Aspire SDK` component in `Individual components`.
-    - Optional: `.NET Multi-platform App UI development` to run client apps
+## Tech Stack
+*(to be completed)*
 
-Or
+## Setup — Running Locally (without Docker)
 
-- Run the following commands in a Powershell & Terminal running as `Administrator` to automatically configure your environment with the required tools to build and run this application. (Note: A restart is required and included in the script below.)
+The application can be run locally using .NET Aspire, which orchestrates all services and their dependencies automatically.
 
-```powershell
-install-Module -Name Microsoft.WinGet.Configuration -AllowPrerelease -AcceptLicense -Force
-$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-get-WinGetConfiguration -file .\.configurations\vside.dsc.yaml | Invoke-WinGetConfiguration -AcceptConfigurationAgreements
+**Prerequisites:** .NET 10 SDK, Docker Desktop (Aspire uses it to run Postgres/Redis/RabbitMQ as containers automatically)
+
+```bash
+cd src/eShop.AppHost
+dotnet run
 ```
 
-Or
+This opens the Aspire Dashboard, showing every service's status and logs, plus a link to the live storefront.
 
-- From Dev Home go to `Machine Configuration -> Clone repositories`. Enter the URL for this repository. In the confirmation screen look for the section `Configuration File Detected` and click `Run File`.
+See `docs/screenshots/` for evidence of a successful local run (Resources view and dependency graph).
 
-#### Mac, Linux, & Windows without Visual Studio
-- Install the latest [.NET 9 SDK](https://dot.net/download?cid=eshop)
+## Deployment — Dev & Prod
 
-Or
+Containerization work is in progress. Each service is documented individually as it's completed:
 
-- Run the following commands in a Powershell & Terminal running as `Administrator` to automatically configuration your environment with the required tools to build and run this application. (Note: A restart is required after running the script below.)
+- [Catalog.API — Dockerization Guide](docs/dockerization-catalog-api.md)
 
-##### Install Visual Studio Code and related extensions
-```powershell
-install-Module -Name Microsoft.WinGet.Configuration -AllowPrerelease -AcceptLicense  -Force
-$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-get-WinGetConfiguration -file .\.configurations\vscode.dsc.yaml | Invoke-WinGetConfiguration -AcceptConfigurationAgreements
-```
+*(Additional services and full dev/prod environment configuration to be added as Sprint 2 progresses.)*
 
-> Note: These commands may require `sudo`
+## CI/CD Pipeline
+*(to be completed — Sprint 2)*
 
-- Optional: Install [Visual Studio Code with C# Dev Kit](https://code.visualstudio.com/docs/csharp/get-started)
-- Optional: Install [.NET MAUI Workload](https://learn.microsoft.com/dotnet/maui/get-started/installation?tabs=visual-studio-code)
+## Monitoring
+*(to be completed — Sprint 3)*
 
-> Note: When running on Mac with Apple Silicon (M series processor), Rosetta 2 for grpc-tools. 
+## Security
+*(to be completed — Sprint 3)*
 
-### Running the solution
+## Disaster Recovery
+*(to be completed — Sprint 3)*
 
-> [!WARNING]
-> Remember to ensure that Docker is started
+## Acknowledgements
 
-* (Windows only) Run the application from Visual Studio:
- - Open the `eShop.Web.slnf` file in Visual Studio
- - Ensure that `eShop.AppHost.csproj` is your startup project
- - Hit Ctrl-F5 to launch Aspire
-
-* Or run the application from your terminal:
-```powershell
-dotnet run --project src/eShop.AppHost/eShop.AppHost.csproj
-```
-then look for lines like this in the console output in order to find the URL to open the Aspire dashboard:
-```sh
-Login to the dashboard at: http://localhost:19888/login?t=uniquelogincodeforyou
-```
-
-> You may need to install ASP.NET Core HTTPS development certificates first, and then close all browser tabs. Learn more at https://aka.ms/aspnet/https-trust-dev-cert
-
-### Azure Open AI
-
-When using Azure OpenAI, inside *eShop.AppHost/appsettings.json*, add the following section:
-
-```json
-  "ConnectionStrings": {
-    "OpenAi": "Endpoint=xxx;Key=xxx;"
-  }
-```
-
-Replace the values with your own. Then, in the eShop.AppHost *Program.cs*, set this value to **true**
-
-```csharp
-bool useOpenAI = false;
-```
-
-Here's additional guidance on the [.NET Aspire OpenAI component](https://learn.microsoft.com/dotnet/aspire/azureai/azureai-openai-component?tabs=dotnet-cli). 
-
-### Use Azure Developer CLI
-
-You can use the [Azure Developer CLI](https://aka.ms/azd) to run this project on Azure with only a few commands. Follow the next instructions:
-
-- Install the latest or update to the latest [Azure Developer CLI (azd)](https://aka.ms/azure-dev/install).
-- Log in `azd` (if you haven't done it before) to your Azure account:
-```sh
-azd auth login
-```
-- Initialize `azd` from the root of the repo.
-```sh
-azd init
-```
-- During init:
-  - Select `Use code in the current directory`. Azd will automatically detect the .NET Aspire project.
-  - Confirm `.NET (Aspire)` and continue.
-  - Select which services to expose to the Internet (exposing `webapp` is enough to test the sample).
-  - Finalize the initialization by giving a name to your environment.
-
-- Create Azure resources and deploy the sample by running:
-```sh
-azd up
-```
-Notes:
-  - The operation takes a few minutes the first time it is ever run for an environment.
-  - At the end of the process, `azd` will display the `url` for the webapp. Follow that link to test the sample.
-  - You can run `azd up` after saving changes to the sample to re-deploy and update the sample.
-  - Report any issues to [azure-dev](https://github.com/Azure/azure-dev/issues) repo.
-  - [FAQ and troubleshoot](https://learn.microsoft.com/azure/developer/azure-developer-cli/troubleshoot?tabs=Browser) for azd.
-
-## Contributing
-
-For more information on contributing to this repo, read [the contribution documentation](./CONTRIBUTING.md) and [the Code of Conduct](CODE-OF-CONDUCT.md).
-
-### Sample data
-
-The sample catalog data is defined in [catalog.json](https://github.com/dotnet/eShop/blob/main/src/Catalog.API/Setup/catalog.json). Those product names, descriptions, and brand names are fictional and were generated using [GPT-35-Turbo](https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/chatgpt), and the corresponding [product images](https://github.com/dotnet/eShop/tree/main/src/Catalog.API/Pics) were generated using [DALL·E 3](https://openai.com/dall-e-3).
-
-## eShop on Azure
-
-For a version of this app configured for deployment on Azure, please view [the eShop on Azure](https://github.com/Azure-Samples/eShopOnAzure) repo.
+This project is built on top of Microsoft's [dotnet/eShop](https://github.com/dotnet/eShop) reference application. Sample catalog data (product names, descriptions, brand names) is fictional, originally generated using GPT-3.5-Turbo, with product images generated using DALL·E 3.
