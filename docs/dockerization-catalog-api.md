@@ -1,0 +1,139 @@
+# Dockerizing Catalog.API — Step-by-Step Guide
+
+This document describes the correct, final process for containerizing Catalog.API. It reflects the working solution — see the Troubleshooting Log at the end for issues encountered along the way and how they were diagnosed.
+
+## Prerequisites
+- Docker Desktop installed and running
+- Repository cloned, with the `dev` branch checked out
+
+## 1. Understand the project's dependency structure
+
+Before writing a Dockerfile for any .NET microservice in this repo, inspect its `.csproj` file:
+
+```bash
+cat src/Catalog.API/Catalog.API.csproj
+```
+
+Look for two things:
+- **`<ProjectReference>`** entries — other projects this service depends on and must be compiled alongside it
+- **`<Compile Include="..\...">`** entries — individual shared source files pulled in from sibling folders
+
+For Catalog.API, this revealed dependencies on:
+- `EventBusRabbitMQ` (which itself depends on `EventBus`)
+- `IntegrationEventLogEF`
+- `eShop.ServiceDefaults`
+- `Shared` (individual files, not a project reference)
+
+**Why this matters:** Docker's build context must include every folder these references point to, or the build will fail. Skipping this step is the single most common cause of failed .NET Docker builds in a multi-project repository like this one.
+
+## 2. Identify the repo's build configuration files
+
+This repo uses **NuGet Central Package Management**, meaning package versions are defined once, centrally, rather than per-project. Confirm this by checking the actual repo root (not the nested `src/` folder containing the projects):
+
+```bash
+find . -maxdepth 1 -name "Directory.*.props"
+```
+
+This should show `Directory.Build.props` and `Directory.Packages.props`. **Both must be included in the Docker build context** — without them, `dotnet restore` cannot resolve package versions.
+
+## 3. Set the correct build context
+
+Because of the dependencies found above, the Docker build context must be the **repository root** (`src/`, the folder containing both the `.props` files and the nested `src/` folder with all service projects) — not the individual service's folder.
+
+## 4. Write the Dockerfile
+
+Create `src/Catalog.API/Dockerfile`:
+
+```dockerfile
+# Build stage: uses the full SDK to compile the app
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+# Copy central config files first (needed for package version resolution)
+COPY ["Directory.Build.props", "."]
+COPY ["Directory.Packages.props", "."]
+
+# Copy only .csproj files first, to leverage Docker layer caching for restore
+COPY ["src/Catalog.API/Catalog.API.csproj", "src/Catalog.API/"]
+COPY ["src/EventBus/EventBus.csproj", "src/EventBus/"]
+COPY ["src/EventBusRabbitMQ/EventBusRabbitMQ.csproj", "src/EventBusRabbitMQ/"]
+COPY ["src/IntegrationEventLogEF/IntegrationEventLogEF.csproj", "src/IntegrationEventLogEF/"]
+COPY ["src/eShop.ServiceDefaults/eShop.ServiceDefaults.csproj", "src/eShop.ServiceDefaults/"]
+
+RUN dotnet restore "src/Catalog.API/Catalog.API.csproj"
+
+# Copy everything else and publish
+COPY . .
+WORKDIR /src/src/Catalog.API
+RUN dotnet publish "Catalog.API.csproj" -c Release -o /app/publish
+
+# Final stage: lightweight runtime image only, no SDK/build tools
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+WORKDIR /app
+COPY --from=build /app/publish .
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "Catalog.API.dll"]
+```
+
+**Design decisions:**
+- **Multi-stage build**: keeps the final image small and free of build tooling (smaller attack surface, faster deploys).
+- **`.csproj` files copied before full source**: leverages Docker's layer caching so `dotnet restore` (slow) is skipped on rebuilds unless dependencies actually change.
+- **Port 8080**: Microsoft's official ASP.NET container images default to this port.
+
+## 5. Build the image
+
+Run from the repository root (`src/`):
+
+```bash
+docker build -t eshop-catalog-api:local -f src/Catalog.API/Dockerfile .
+```
+
+## 6. Run with its dependencies via Docker Compose
+
+Catalog.API requires a PostgreSQL database to function. Rather than testing standalone, use Docker Compose to run the service with its database together (see `docker-compose.yml` at the repo root).
+
+```bash
+docker compose up --build
+```
+
+## 7. Verify
+
+In a separate terminal:
+
+```bash
+curl "http://localhost:8080/api/catalog/items?api-version=1.0&pageSize=5"
+```
+
+A successful response returns JSON with real seeded product data, confirming the container, database connection, EF Core migrations, and data seeding all work correctly.
+
+**Note the `api-version` query parameter is required** — this API uses explicit API versioning (via `Asp.Versioning.Http`), so requests without a version return HTTP 400.
+
+## Known limitation
+
+Catalog.API also attempts to connect to RabbitMQ (the event bus) on startup. This is **not yet included** in `docker-compose.yml`. The application tolerates this gracefully — the connection attempt runs on a background thread and does not crash the API — but event publishing will not function until RabbitMQ is added. This will be addressed once Basket.API and Ordering.API are containerized, since all three services share this same dependency.
+
+---
+
+## Troubleshooting Log
+
+Issues actually encountered while building this, in the order they occurred — kept here for reference, since a real DevOps workflow rarely goes perfectly on the first attempt.
+
+### Issue 1: `NU1015` — package versions not specified
+**Symptom:** `dotnet restore` failed with errors like "The following PackageReference item(s) do not have a version specified."
+**Cause:** The repo uses NuGet Central Package Management (`Directory.Packages.props`), which wasn't yet included in the Docker build context.
+**Fix:** Added explicit `COPY` instructions for `Directory.Build.props` and `Directory.Packages.props`, and moved the build context from `src/src` to the true repository root (`src/`).
+
+### Issue 2: Missing `EventBus` project
+**Symptom:** `Skipping project ".../EventBus/EventBus.csproj" because it was not found.`
+**Cause:** `EventBusRabbitMQ.csproj` has its own `<ProjectReference>` to `EventBus`, which wasn't copied into the build context.
+**Fix:** Added a `COPY` line for `EventBus/EventBus.csproj` alongside the other dependency projects.
+
+### Issue 3: Build context path mismatch after fixing Issues 1 & 2
+**Symptom:** All `COPY` instructions failed with "not found" errors, despite the paths being correct in the Dockerfile.
+**Cause:** The `docker build` command was still being run from `src/src`, while the Dockerfile had been updated to expect a build context of `src/` (the actual repo root).
+**Fix:** Ran the build command from the repository root instead, with an updated `-f` flag pointing to the Dockerfile's new relative location: `docker build -t eshop-catalog-api:local -f src/Catalog.API/Dockerfile .`
+
+### Issue 4: Missing database connection string (expected, standalone test)
+**Symptom:** `ConnectionString is missing. It should be provided in 'ConnectionStrings:catalogdb'...`
+**Cause:** Ran the container standalone (`docker run`) without a database, to confirm the container itself starts correctly.
+**Resolution:** Not a bug — confirmed the container works correctly in isolation. Moved to Docker Compose to provide the required database dependency.
