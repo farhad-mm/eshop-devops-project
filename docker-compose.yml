@@ -1,0 +1,28 @@
+services:
+  catalog-db:
+    image: ankane/pgvector:latest
+    container_name: catalog-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_dev_password}
+      POSTGRES_DB: catalogdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - catalog-db-data:/var/lib/postgresql/data
+
+  catalog-api:
+    build:
+      context: .
+      dockerfile: src/Catalog.API/Dockerfile
+    container_name: catalog-api
+    depends_on:
+      - catalog-db
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__catalogdb: "Host=catalog-db;Port=5432;Database=catalogdb;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres_dev_password}"
+    ports:
+      - "8080:8080"
+
+volumes:
+  catalog-db-data:
