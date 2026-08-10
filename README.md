@@ -41,7 +41,7 @@ See `docs/screenshots/` for evidence of a successful local run (Resources view a
 
 Containerization work is in progress. Each service is documented individually as it's completed:
 
-- [Catalog.API — Dockerization Guide](docs/dockerization-catalog-api.md)
+- [Dockerization Guide](docs/dockerization.md) — Catalog.API complete; Basket.API and Ordering.API to follow
 
 *(Additional services and full dev/prod environment configuration to be added as Sprint 2 progresses.)*
 
