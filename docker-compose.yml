@@ -21,6 +21,10 @@ services:
       - "5672:5672"
       - "15672:15672"
 
+  redis:
+    image: redis:7
+    container_name: redis
+
   catalog-api:
     build:
       context: .
@@ -35,6 +39,21 @@ services:
       ConnectionStrings__EventBus: "amqp://guest:guest@rabbitmq:5672"
     ports:
       - "8080:8080"
+
+  basket-api:
+    build:
+      context: .
+      dockerfile: src/Basket.API/Dockerfile
+    container_name: basket-api
+    depends_on:
+      - redis
+      - rabbitmq
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__redis: "redis:6379"
+      ConnectionStrings__EventBus: "amqp://guest:guest@rabbitmq:5672"
+    ports:
+      - "8081:8080"
 
 volumes:
   catalog-db-data:

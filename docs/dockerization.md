@@ -155,3 +155,77 @@ Issues actually encountered while building this, in the order they occurred — 
 **Symptom:** New ignore rules were added, but the repository's original, more complete `.gitignore` content disappeared.
 **Cause:** Pasting new content into an already-open file in an editor replaced the existing text instead of appending to it.
 **Fix:** Restored a complete, standard .NET `.gitignore` covering build output, IDE files, test results, and secrets, then verified with `git status` before committing.
+
+---
+
+## Basket.API
+
+### 1. Dependency inspection
+
+`Basket.API.csproj` was inspected the same way as Catalog.API. It references `eShop.ServiceDefaults` and `EventBusRabbitMQ` (which transitively needs `EventBus`), but — unlike Catalog.API — has no dependency on `IntegrationEventLogEF` or `Shared`, since it uses Redis rather than Entity Framework/Postgres.
+
+Two dependencies not seen in Catalog.API:
+- **`Aspire.StackExchange.Redis`** — the Redis client
+- **`Grpc.AspNetCore`** with a `.proto` file (`GrpcServices="Server"`) — Basket.API exposes a gRPC service in addition to any HTTP endpoints
+
+### 2. Confirming the Redis connection name
+
+```bash
+grep -rn "AddRedis" src/Basket.API
+# -> builder.AddRedisClient("redis");
+```
+
+This confirmed the connection string environment variable needed is `ConnectionStrings__redis`.
+
+### 3. Dockerfile
+
+Same proven multi-stage pattern as Catalog.API, with dependency paths adjusted:
+
+```dockerfile
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+COPY ["Directory.Build.props", "."]
+COPY ["Directory.Packages.props", "."]
+
+COPY ["src/Basket.API/Basket.API.csproj", "src/Basket.API/"]
+COPY ["src/EventBus/EventBus.csproj", "src/EventBus/"]
+COPY ["src/EventBusRabbitMQ/EventBusRabbitMQ.csproj", "src/EventBusRabbitMQ/"]
+COPY ["src/eShop.ServiceDefaults/eShop.ServiceDefaults.csproj", "src/eShop.ServiceDefaults/"]
+
+RUN dotnet restore "src/Basket.API/Basket.API.csproj"
+
+COPY . .
+WORKDIR /src/src/Basket.API
+RUN dotnet publish "Basket.API.csproj" -c Release -o /app/publish
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+WORKDIR /app
+COPY --from=build /app/publish .
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "Basket.API.dll"]
+```
+
+Built successfully on the first attempt, with no rework needed — confirming that checking dependencies and the Redis connection name before writing the Dockerfile (rather than discovering them via failed builds, as happened with Catalog.API) avoids the earlier round of trial and error entirely.
+
+### 4. Docker Compose integration
+
+Added to `docker-compose.yml`: a `redis:7` service (no configuration required out of the box), and a `basket-api` service depending on both `redis` and `rabbitmq`, with:
+
+```yaml
+ConnectionStrings__redis: "redis:6379"
+ConnectionStrings__EventBus: "amqp://guest:guest@rabbitmq:5672"
+```
+
+Basket.API is mapped to host port `8081` (rather than `8080`) since both it and Catalog.API listen on `8080` inside their own containers and cannot both claim the same host port simultaneously.
+
+### 5. Verification
+
+Basket.API exposes a gRPC-only endpoint, so a plain `curl` request correctly receives an HTTP 400 with the message "An HTTP/1.x request was sent to an HTTP/2 only endpoint" — this confirms the server is running and correctly enforcing gRPC's HTTP/2 requirement, rather than indicating a failure. Full gRPC-level testing (e.g., via `grpcurl`) is deferred to the testing pillar of this project.
+
+Startup logs confirmed a clean connection to RabbitMQ with no errors, matching the pattern proven with Catalog.API.
+
+### Notes
+
+Two non-fatal startup warnings appear in the logs, both expected for a local/dev container and worth revisiting under the project's Security (DevSecOps) pillar rather than fixing now:
+- **DataProtection keys** stored inside the container's filesystem are lost on container recreation — irrelevant for local testing, but relevant for persistent auth scenarios in production.
