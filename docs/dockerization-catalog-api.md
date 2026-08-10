@@ -108,9 +108,22 @@ A successful response returns JSON with real seeded product data, confirming the
 
 **Note the `api-version` query parameter is required** — this API uses explicit API versioning (via `Asp.Versioning.Http`), so requests without a version return HTTP 400.
 
-## Known limitation
+## RabbitMQ (Event Bus)
 
-Catalog.API also attempts to connect to RabbitMQ (the event bus) on startup. This is **not yet included** in `docker-compose.yml`. The application tolerates this gracefully — the connection attempt runs on a background thread and does not crash the API — but event publishing will not function until RabbitMQ is added. This will be addressed once Basket.API and Ordering.API are containerized, since all three services share this same dependency.
+Catalog.API publishes and subscribes to integration events via RabbitMQ, using the connection name `eventbus` (confirmed in `src/Catalog.API/Extensions/Extensions.cs`). This is provided in `docker-compose.yml` via:
+
+```yaml
+rabbitmq:
+  image: rabbitmq:4-management
+  environment:
+    RABBITMQ_DEFAULT_USER: guest
+    RABBITMQ_DEFAULT_PASS: guest
+  ports:
+    - "5672:5672"
+    - "15672:15672"
+```
+
+The `catalog-api` service connects to it via `ConnectionStrings__EventBus: "amqp://guest:guest@rabbitmq:5672"`. The `-management` image variant also exposes a web dashboard at `http://localhost:15672` (login `guest`/`guest`), useful for confirming messages are actually flowing.
 
 ---
 

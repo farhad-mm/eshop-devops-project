@@ -11,6 +11,16 @@ services:
     volumes:
       - catalog-db-data:/var/lib/postgresql/data
 
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
   catalog-api:
     build:
       context: .
@@ -18,9 +28,11 @@ services:
     container_name: catalog-api
     depends_on:
       - catalog-db
+      - rabbitmq
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__catalogdb: "Host=catalog-db;Port=5432;Database=catalogdb;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres_dev_password}"
+      ConnectionStrings__EventBus: "amqp://guest:guest@rabbitmq:5672"
     ports:
       - "8080:8080"
 
