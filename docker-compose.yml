@@ -11,6 +11,18 @@ services:
     volumes:
       - catalog-db-data:/var/lib/postgresql/data
 
+  ordering-db:
+    image: ankane/pgvector:latest
+    container_name: ordering-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_dev_password}
+      POSTGRES_DB: orderingdb
+    ports:
+      - "5433:5432"
+    volumes:
+      - ordering-db-data:/var/lib/postgresql/data
+
   rabbitmq:
     image: rabbitmq:4-management
     container_name: rabbitmq
@@ -55,5 +67,22 @@ services:
     ports:
       - "8081:8080"
 
+  ordering-api:
+    build:
+      context: .
+      dockerfile: src/Ordering.API/Dockerfile
+    container_name: ordering-api
+    depends_on:
+      - ordering-db
+      - rabbitmq
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__orderingdb: "Host=ordering-db;Port=5432;Database=orderingdb;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres_dev_password}"
+      ConnectionStrings__EventBus: "amqp://guest:guest@rabbitmq:5672"
+      Identity__Url: "http://identity-api"
+    ports:
+      - "8082:8080"
+
 volumes:
   catalog-db-data:
+  ordering-db-data:
