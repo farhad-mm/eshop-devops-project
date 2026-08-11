@@ -47,4 +47,4 @@ appsettings.*.local.json
 run-log.txt
 
 # Docker
-docker-compose.override.yml
+docker-compose.override.yml.env.production

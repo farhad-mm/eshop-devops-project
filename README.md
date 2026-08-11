@@ -39,11 +39,29 @@ See `docs/screenshots/` for evidence of a successful local run (Resources view a
 
 ## Deployment — Dev & Prod
 
-Containerization work is in progress. Each service is documented individually as it's completed:
+All three core services (Catalog.API, Basket.API, Ordering.API) are fully containerized and run together via Docker Compose, alongside their infrastructure dependencies (PostgreSQL, Redis, RabbitMQ). See the [Dockerization Guide](docs/dockerization.md) for per-service details.
 
-- [Dockerization Guide](docs/dockerization.md) — Catalog.API complete; Basket.API and Ordering.API to follow
+Both environments use the same `docker-compose.yml`, with differences applied through environment-specific `.env` files and a production override file.
 
-*(Additional services and full dev/prod environment configuration to be added as Sprint 2 progresses.)*
+| Aspect | Development | Production |
+|---|---|---|
+| Config file | `.env.development` (committed) | `.env.production` (never committed; see `.env.production.example`) |
+| `ASPNETCORE_ENVIRONMENT` | `Development` | `Production` |
+| Database/RabbitMQ credentials | Fixed dev defaults | Real secrets, set locally, gitignored |
+| Postgres/RabbitMQ ports | Exposed to host (`5432`, `5433`, `5672`, `15672`) for local debugging | Not exposed — reachable only inside the Docker network |
+| Restart policy | None (manual start/stop while developing) | `unless-stopped` |
+
+**Run in development:**
+```bash
+docker compose --env-file .env.development up --build -d
+```
+
+**Run in production (or a production-like test):**
+```bash
+docker compose --env-file .env.production -f docker-compose.yml -f docker-compose.prod.yml up --build -d
+```
+
+*(Kubernetes-based deployment to be added later in Sprint 2.)*
 
 ## CI/CD Pipeline
 *(to be completed — Sprint 2)*

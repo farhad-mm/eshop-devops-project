@@ -1,0 +1,24 @@
+services:
+  catalog-db:
+    ports: !reset []
+    restart: unless-stopped
+
+  ordering-db:
+    ports: !reset []
+    restart: unless-stopped
+
+  rabbitmq:
+    ports: !reset []
+    restart: unless-stopped
+
+  redis:
+    restart: unless-stopped
+
+  catalog-api:
+    restart: unless-stopped
+
+  basket-api:
+    restart: unless-stopped
+
+  ordering-api:
+    restart: unless-stopped

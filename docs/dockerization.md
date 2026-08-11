@@ -229,3 +229,80 @@ Startup logs confirmed a clean connection to RabbitMQ with no errors, matching t
 
 Two non-fatal startup warnings appear in the logs, both expected for a local/dev container and worth revisiting under the project's Security (DevSecOps) pillar rather than fixing now:
 - **DataProtection keys** stored inside the container's filesystem are lost on container recreation — irrelevant for local testing, but relevant for persistent auth scenarios in production.
+
+---
+
+## Ordering.API
+
+### 1. Dependency inspection
+
+`Ordering.API.csproj` references `EventBusRabbitMQ`, `IntegrationEventLogEF`, `eShop.ServiceDefaults` (same as Catalog.API), plus two new project references not seen before: `Ordering.Domain` and `Ordering.Infrastructure`. Both were inspected directly and confirmed to introduce no further project dependencies beyond what was already known.
+
+### 2. Confirming connection names
+
+```bash
+grep -rn "orderingdb" Ordering.API/Extensions/Extensions.cs
+# -> options.UseNpgsql(builder.Configuration.GetConnectionString("orderingdb"));
+```
+
+Confirmed the database connection name is `orderingdb`; the event bus connection reuses the same `EventBus` name already established for Catalog.API and Basket.API.
+
+### 3. Dockerfile
+
+Same proven multi-stage pattern, with the two additional project references copied in:
+
+```dockerfile
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+COPY ["Directory.Build.props", "."]
+COPY ["Directory.Packages.props", "."]
+
+COPY ["src/Ordering.API/Ordering.API.csproj", "src/Ordering.API/"]
+COPY ["src/EventBus/EventBus.csproj", "src/EventBus/"]
+COPY ["src/EventBusRabbitMQ/EventBusRabbitMQ.csproj", "src/EventBusRabbitMQ/"]
+COPY ["src/IntegrationEventLogEF/IntegrationEventLogEF.csproj", "src/IntegrationEventLogEF/"]
+COPY ["src/eShop.ServiceDefaults/eShop.ServiceDefaults.csproj", "src/eShop.ServiceDefaults/"]
+COPY ["src/Ordering.Domain/Ordering.Domain.csproj", "src/Ordering.Domain/"]
+COPY ["src/Ordering.Infrastructure/Ordering.Infrastructure.csproj", "src/Ordering.Infrastructure/"]
+
+RUN dotnet restore "src/Ordering.API/Ordering.API.csproj"
+
+COPY . .
+WORKDIR /src/src/Ordering.API
+RUN dotnet publish "Ordering.API.csproj" -c Release -o /app/publish
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+WORKDIR /app
+COPY --from=build /app/publish .
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "Ordering.API.dll"]
+```
+
+Built successfully on the first attempt.
+
+### 4. Docker Compose integration
+
+Added a second, independent PostgreSQL container, `ordering-db`, mapped to host port `5433` (since `catalog-db` already uses `5432`), and an `ordering-api` service mapped to host port `8082`. Connection strings follow the same pattern established for Catalog.API.
+
+### 5. The Identity.API dependency
+
+Ordering.API's authentication middleware initializes on **every** request — not just endpoints marked `[Authorize]` — and requires an `Identity:Url` configuration value to do so. Since Identity.API is a bonus service and is not running, every request initially failed with HTTP 500: `Configuration missing value for: Identity:Url`, including the unauthenticated `/health` endpoint.
+
+**Fix applied:** a placeholder value was added to unblock the middleware from crashing:
+
+```yaml
+Identity__Url: "http://identity-api"
+```
+
+**What this does and does not fix:** this satisfies the configuration check that was blocking every request, allowing health checks and any non-authenticated logic to be verified. It does **not** provide working authentication — any request that actually validates a bearer token will still fail, since `http://identity-api` does not resolve to a running service. This is an honest placeholder, not a functional fix, and is revisited if Identity.API is containerized later as a bonus service.
+
+### 6. Verification
+
+```bash
+curl -i "http://localhost:8082/health"
+# -> HTTP/1.1 200 OK
+# -> Healthy
+```
+
+Startup logs confirmed migrations applied cleanly (four migrations, including the outbox pattern), seed data present, and RabbitMQ connected without error — consistent with the pattern proven across all three core services.

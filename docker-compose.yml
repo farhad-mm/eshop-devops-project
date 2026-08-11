@@ -4,7 +4,7 @@ services:
     container_name: catalog-db
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_dev_password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: catalogdb
     ports:
       - "5432:5432"
@@ -16,7 +16,7 @@ services:
     container_name: ordering-db
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_dev_password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: orderingdb
     ports:
       - "5433:5432"
@@ -27,8 +27,8 @@ services:
     image: rabbitmq:4-management
     container_name: rabbitmq
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -46,9 +46,9 @@ services:
       - catalog-db
       - rabbitmq
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__catalogdb: "Host=catalog-db;Port=5432;Database=catalogdb;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres_dev_password}"
-      ConnectionStrings__EventBus: "amqp://guest:guest@rabbitmq:5672"
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
+      ConnectionStrings__catalogdb: "Host=catalog-db;Port=5432;Database=catalogdb;Username=postgres;Password=${POSTGRES_PASSWORD}"
+      ConnectionStrings__EventBus: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672"
     ports:
       - "8080:8080"
 
@@ -61,9 +61,9 @@ services:
       - redis
       - rabbitmq
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
       ConnectionStrings__redis: "redis:6379"
-      ConnectionStrings__EventBus: "amqp://guest:guest@rabbitmq:5672"
+      ConnectionStrings__EventBus: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672"
     ports:
       - "8081:8080"
 
@@ -76,9 +76,9 @@ services:
       - ordering-db
       - rabbitmq
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__orderingdb: "Host=ordering-db;Port=5432;Database=orderingdb;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres_dev_password}"
-      ConnectionStrings__EventBus: "amqp://guest:guest@rabbitmq:5672"
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
+      ConnectionStrings__orderingdb: "Host=ordering-db;Port=5432;Database=orderingdb;Username=postgres;Password=${POSTGRES_PASSWORD}"
+      ConnectionStrings__EventBus: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672"
       Identity__Url: "http://identity-api"
     ports:
       - "8082:8080"
