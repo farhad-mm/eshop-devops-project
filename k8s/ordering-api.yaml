@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ordering-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: ordering-api }
+  template:
+    metadata:
+      labels: { app: ordering-api }
+    spec:
+      containers:
+        - name: ordering-api
+          image: eshop-ordering-api:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef: { name: ordering-api-config }
+            - secretRef: { name: ordering-api-secret }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ordering-api
+spec:
+  selector: { app: ordering-api }
+  ports:
+    - port: 8080
+      targetPort: 8080

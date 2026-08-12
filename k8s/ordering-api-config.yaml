@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ordering-api-config
+data:
+  ASPNETCORE_ENVIRONMENT: "Development"
+  Identity__Url: "http://identity-api"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ordering-api-secret
+type: Opaque
+stringData:
+  ConnectionStrings__orderingdb: "Host=ordering-db;Port=5432;Database=orderingdb;Username=postgres;Password=postgres_dev_password"
+  ConnectionStrings__EventBus: "amqp://guest:guest@rabbitmq:5672"

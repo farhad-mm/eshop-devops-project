@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: basket-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: basket-api }
+  template:
+    metadata:
+      labels: { app: basket-api }
+    spec:
+      containers:
+        - name: basket-api
+          image: eshop-basket-api:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef: { name: basket-api-config }
+            - secretRef: { name: basket-api-secret }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: basket-api
+spec:
+  selector: { app: basket-api }
+  ports:
+    - port: 8080
+      targetPort: 8080

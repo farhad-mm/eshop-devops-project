@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: catalog-api-config
+data:
+  ASPNETCORE_ENVIRONMENT: "Development"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: catalog-api-secret
+type: Opaque
+stringData:
+  ConnectionStrings__catalogdb: "Host=catalog-db;Port=5432;Database=catalogdb;Username=postgres;Password=postgres_dev_password"
+  ConnectionStrings__EventBus: "amqp://guest:guest@rabbitmq:5672"
