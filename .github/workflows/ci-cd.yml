@@ -1,0 +1,79 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore Basket.UnitTests
+        run: dotnet restore tests/Basket.UnitTests/Basket.UnitTests.csproj
+
+      - name: Test Basket.UnitTests
+        run: dotnet test tests/Basket.UnitTests/Basket.UnitTests.csproj --no-restore
+
+      - name: Restore Ordering.UnitTests
+        run: dotnet restore tests/Ordering.UnitTests/Ordering.UnitTests.csproj
+
+      - name: Test Ordering.UnitTests
+        run: dotnet test tests/Ordering.UnitTests/Ordering.UnitTests.csproj --no-restore
+
+  docker-build-push:
+    needs: build-and-test
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Catalog.API
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: src/Catalog.API/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/catalog-api:latest
+            ghcr.io/${{ github.repository }}/catalog-api:${{ github.sha }}
+
+      - name: Build and push Basket.API
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: src/Basket.API/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/basket-api:latest
+            ghcr.io/${{ github.repository }}/basket-api:${{ github.sha }}
+
+      - name: Build and push Ordering.API
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: src/Ordering.API/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/ordering-api:latest
+            ghcr.io/${{ github.repository }}/ordering-api:${{ github.sha }}
