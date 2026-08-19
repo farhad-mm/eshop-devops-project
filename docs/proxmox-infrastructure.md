@@ -157,3 +157,16 @@ Piping data into ssh hijacks stdin, breaking interactive host-key confirmation. 
 ssh only auto-tries default-named key files (id_rsa, id_ecdsa, id_ed25519) — a custom-named key needs -i <path> or an explicit IdentityFile in ~/.ssh/config.
 
 Proxmox's browser Shell uses its own terminal proxy (termproxy), not real sshd — root access there does not guarantee root can SSH in over port 22; check sshd_config's PermitRootLogin separately.
+## VM Resource Upgrade (2026-08-19)
+
+VM 103 was resized from 4GB RAM / 2 cores to 8GB RAM / 4 cores to accommodate
+the full eShop Aspire stack (PostgreSQL, Redis, RabbitMQ, Ollama LLM, plus
+9 .NET microservices), which exceeded the original allocation.
+
+Commands used:
+    ssh eshop-k3s "sudo shutdown now"
+    qm set 103 --memory 8192 --cores 4
+    qm start 103
+
+Verified post-resize: K3s node Ready, Docker functional, 7.8Gi RAM and 4 CPUs
+visible inside the guest OS.
