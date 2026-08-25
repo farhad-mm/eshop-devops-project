@@ -12,8 +12,8 @@ spec:
     spec:
       containers:
         - name: basket-api
-          image: eshop-basket-api:local
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/farhad-mm/eshop-devops-project/basket-api:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           envFrom:

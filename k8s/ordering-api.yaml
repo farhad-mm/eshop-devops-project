@@ -12,8 +12,8 @@ spec:
     spec:
       containers:
         - name: ordering-api
-          image: eshop-ordering-api:local
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/farhad-mm/eshop-devops-project/ordering-api:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           envFrom:

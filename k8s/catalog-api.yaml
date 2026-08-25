@@ -12,8 +12,8 @@ spec:
     spec:
       containers:
         - name: catalog-api
-          image: eshop-catalog-api:local
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/farhad-mm/eshop-devops-project/catalog-api:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           envFrom:
