@@ -99,27 +99,35 @@ jobs:
           kubectl rollout status deployment/basket-api -n default --timeout=120s
           kubectl rollout status deployment/ordering-api -n default --timeout=120s
 
-      - name: Smoke test services
+      - name: Smoke test Catalog API
         run: |
-          set -e
+          kubectl run smoke-catalog-api \
+            --namespace=default \
+            --image=curlimages/curl:8.12.1 \
+            --restart=Never \
+            --rm \
+            --attach \
+            --command -- \
+            sh -c 'for i in $(seq 1 12); do curl --fail --silent --show-error --max-time 5 http://catalog-api:8080/health && exit 0; echo "Catalog not ready; retrying..."; sleep 5; done; exit 1'
 
-          for app in catalog-api basket-api ordering-api; do
-            echo "Testing ${app} service..."
+      - name: Smoke test Basket API
+        run: |
+          kubectl run smoke-basket-api \
+            --namespace=default \
+            --image=curlimages/curl:8.12.1 \
+            --restart=Never \
+            --rm \
+            --attach \
+            --command -- \
+            sh -c 'for i in $(seq 1 12); do curl --http2-prior-knowledge --fail --silent --show-error --max-time 5 http://basket-api:8080/health && exit 0; echo "Basket not ready; retrying..."; sleep 5; done; exit 1'
 
-            if [ "$app" = "basket-api" ]; then
-              protocol_option="--http2-prior-knowledge"
-            else
-              protocol_option=""
-            fi
-
-            kubectl run "smoke-${app}" \
-              --namespace=default \
-              --image=curlimages/curl:8.12.1 \
-              --restart=Never \
-              --rm \
-              --attach \
-              --command -- \
-              sh -c "for i in \$(seq 1 12); do curl \$protocol_option --fail --silent --show-error --max-time 5 http://${app}:8080/health && exit 0; echo 'Not ready yet; retrying...'; sleep 5; done; exit 1"
-
-            echo "${app} health check passed"
-          done
+      - name: Smoke test Ordering API
+        run: |
+          kubectl run smoke-ordering-api \
+            --namespace=default \
+            --image=curlimages/curl:8.12.1 \
+            --restart=Never \
+            --rm \
+            --attach \
+            --command -- \
+            sh -c 'for i in $(seq 1 12); do curl --fail --silent --show-error --max-time 5 http://ordering-api:8080/health && exit 0; echo "Ordering not ready; retrying..."; sleep 5; done; exit 1'
