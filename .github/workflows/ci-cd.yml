@@ -78,7 +78,7 @@ jobs:
             ghcr.io/${{ github.repository }}/ordering-api:latest
             ghcr.io/${{ github.repository }}/ordering-api:${{ github.sha }}
 
-  deploy:
+    deploy:
     needs: docker-build-push
     if: github.event_name == 'push'
     runs-on: vm103
@@ -92,3 +92,30 @@ jobs:
           kubectl rollout restart deployment catalog-api -n default
           kubectl rollout restart deployment basket-api -n default
           kubectl rollout restart deployment ordering-api -n default
+
+      - name: Wait for rollouts
+        run: |
+          kubectl rollout status deployment/catalog-api --timeout=120s
+          kubectl rollout status deployment/basket-api --timeout=120s
+          kubectl rollout status deployment/ordering-api --timeout=120s
+
+      - name: Smoke test - Catalog API
+        run: |
+          kubectl wait --for=condition=available deployment/catalog-api --timeout=120s
+          CATALOG_POD=$(kubectl get pod -l app=catalog-api -o jsonpath='{.items[0].metadata.name}')
+          kubectl exec $CATALOG_POD -- curl -sf http://localhost:8080/health || exit 1
+          echo "✓ Catalog API health check passed"
+
+      - name: Smoke test - Basket API
+        run: |
+          kubectl wait --for=condition=available deployment/basket-api --timeout=120s
+          BASKET_POD=$(kubectl get pod -l app=basket-api -o jsonpath='{.items[0].metadata.name}')
+          kubectl exec $BASKET_POD -- curl -sf http://localhost:8080/health || exit 1
+          echo "✓ Basket API health check passed"
+
+      - name: Smoke test - Ordering API
+        run: |
+          kubectl wait --for=condition=available deployment/ordering-api --timeout=120s
+          ORDERING_POD=$(kubectl get pod -l app=ordering-api -o jsonpath='{.items[0].metadata.name}')
+          kubectl exec $ORDERING_POD -- curl -sf http://localhost:8080/health || exit 1
+          echo "✓ Ordering API health check passed"
