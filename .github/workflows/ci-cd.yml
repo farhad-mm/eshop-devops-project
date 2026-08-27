@@ -99,26 +99,23 @@ jobs:
           kubectl rollout status deployment/basket-api -n default --timeout=120s
           kubectl rollout status deployment/ordering-api -n default --timeout=120s
 
-      - name: Smoke test APIs
+      - name: Smoke test services
         run: |
           set -e
 
           for app in catalog-api basket-api ordering-api; do
-            echo "Testing ${app}..."
+            echo "Testing ${app} service..."
 
-            pod=$(kubectl get pods \
-              -l "app=${app}" \
-              -o jsonpath='{.items[?(@.status.phase=="Running")].metadata.name}' \
-              | awk '{print $1}')
-
-            if [ -z "$pod" ]; then
-              echo "No running pod found for ${app}"
-              kubectl get pods -l "app=${app}"
-              exit 1
-            fi
-
-            kubectl exec "$pod" -- sh -c \
-              "command -v wget >/dev/null && wget -qO- http://127.0.0.1:8080/health || command -v curl >/dev/null && curl -fsS http://127.0.0.1:8080/health"
+            kubectl run "smoke-${app}" \
+              --namespace=default \
+              --image=curlimages/curl:8.12.1 \
+              --restart=Never \
+              --rm \
+              --attach \
+              --command -- \
+              curl --fail --silent --show-error \
+              --max-time 20 \
+              "http://${app}:8080/health"
 
             echo "${app} health check passed"
           done
