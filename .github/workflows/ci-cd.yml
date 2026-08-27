@@ -106,6 +106,12 @@ jobs:
           for app in catalog-api basket-api ordering-api; do
             echo "Testing ${app} service..."
 
+            if [ "$app" = "basket-api" ]; then
+              protocol_option="--http2-prior-knowledge"
+            else
+              protocol_option=""
+            fi
+
             kubectl run "smoke-${app}" \
               --namespace=default \
               --image=curlimages/curl:8.12.1 \
@@ -113,7 +119,7 @@ jobs:
               --rm \
               --attach \
               --command -- \
-              sh -c "for i in \$(seq 1 12); do curl --fail --silent --show-error --max-time 5 http://${app}:8080/health && exit 0; echo 'Not ready yet; retrying...'; sleep 5; done; exit 1"
+              sh -c "for i in \$(seq 1 12); do curl \$protocol_option --fail --silent --show-error --max-time 5 http://${app}:8080/health && exit 0; echo 'Not ready yet; retrying...'; sleep 5; done; exit 1"
 
             echo "${app} health check passed"
           done
