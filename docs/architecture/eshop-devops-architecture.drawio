@@ -1,0 +1,158 @@
+<mxfile host="Electron" agent="Perplexity">
+  <diagram id="eshop-png-match" name="eShop DevOps Architecture">
+    <mxGraphModel dx="1867" dy="1113" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1050" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="bg" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="1050" width="1600" as="geometry" />
+        </mxCell>
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;fontSize=22;fontColor=#111827;fontFamily=Helvetica;" value="eShop DevOps architecture&amp;nbsp;" vertex="1">
+          <mxGeometry height="32" width="900" x="32" y="16" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=12;fontColor=#6B7280;fontFamily=Helvetica;" value="Current system is internal only; VM103 is not exposed to the public internet." vertex="1">
+          <mxGeometry height="20" width="700" x="32" y="46" as="geometry" />
+        </mxCell>
+        <mxCell id="dev" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;strokeWidth=2;shadow=1;fontFamily=Helvetica;fontSize=12;fontColor=#1E3A8A;align=center;arcSize=8;" value="&lt;b&gt;Developer workstation&lt;/b&gt;&lt;br&gt;Windows laptop&lt;br&gt;VS Code + Git + PowerShell" vertex="1">
+          <mxGeometry height="130" width="210" x="32" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="github" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9FAFB;strokeColor=#111827;strokeWidth=2;shadow=1;arcSize=6;verticalAlign=top;" value="" vertex="1">
+          <mxGeometry height="520" width="280" x="300" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="github-title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontStyle=1;fontSize=18;fontColor=#111827;fontFamily=Helvetica;" value="GitHub" vertex="1">
+          <mxGeometry height="28" width="280" x="300" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="repo" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9CA3AF;strokeWidth=1;shadow=0;fontFamily=Helvetica;fontSize=12;fontColor=#111827;arcSize=8;" value="&lt;b&gt;eShop repository&lt;/b&gt;&lt;br&gt;dev branch" vertex="1">
+          <mxGeometry height="70" width="236" x="322" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="gha" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=12;fontColor=#111827;align=center;arcSize=8;" value="&lt;b&gt;GitHub Actions&lt;/b&gt;&lt;br&gt;test&lt;br&gt;build&lt;br&gt;Trivy scan&lt;br&gt;deploy (self-hosted runner)" vertex="1">
+          <mxGeometry height="150" width="236" x="322" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="ghcr" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=12;fontColor=#111827;arcSize=8;" value="&lt;b&gt;GHCR&lt;/b&gt;&lt;br&gt;versioned images:&lt;br&gt;Catalog, Basket, Ordering" vertex="1">
+          <mxGeometry height="90" width="236" x="322" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="gha-note" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=10;fontColor=#6B7280;fontFamily=Helvetica;" value="on push to dev  →  push container images" vertex="1">
+          <mxGeometry height="24" width="236" x="322" y="500" as="geometry" />
+        </mxCell>
+        <mxCell id="proxmox" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;strokeWidth=2;shadow=1;arcSize=6;verticalAlign=top;" value="" vertex="1">
+          <mxGeometry height="620" width="930" x="640" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="proxmox-title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=13;fontColor=#9A3412;fontFamily=Helvetica;" value="&lt;b&gt;Proxmox host&lt;/b&gt;&lt;br&gt;B2C-DevOps-Inter-Bootcamp-MAY26-English-group1" vertex="1">
+          <mxGeometry height="40" width="930" x="640" y="88" as="geometry" />
+        </mxCell>
+        <mxCell id="vm103" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#111827;strokeWidth=2;arcSize=6;verticalAlign=top;" value="" vertex="1">
+          <mxGeometry height="544" width="890" x="660" y="136" as="geometry" />
+        </mxCell>
+        <mxCell id="vm103-title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=14;fontColor=#111827;fontFamily=Helvetica;" value="&lt;b&gt;VM103 – farhad-eshop-k3s / k3s cluster&lt;/b&gt;" vertex="1">
+          <mxGeometry height="24" width="890" x="660" y="144" as="geometry" />
+        </mxCell>
+        <mxCell id="apps" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;strokeWidth=2;arcSize=8;verticalAlign=top;" value="" vertex="1">
+          <mxGeometry height="300" width="850" x="680" y="176" as="geometry" />
+        </mxCell>
+        <mxCell id="apps-title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=12;fontColor=#1E3A8A;fontFamily=Helvetica;" value="&lt;b&gt;Application workloads (namespace: default)&lt;/b&gt;" vertex="1">
+          <mxGeometry height="22" width="850" x="680" y="184" as="geometry" />
+        </mxCell>
+        <mxCell id="catalog" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2563EB;strokeWidth=1;fontFamily=Helvetica;fontSize=12;fontColor=#1E3A8A;arcSize=12;" value="&lt;b&gt;Catalog API&lt;/b&gt;" vertex="1">
+          <mxGeometry height="48" width="150" x="704" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="catalogdb" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#FFFFFF;strokeColor=#2563EB;fontFamily=Helvetica;fontSize=11;fontColor=#1E3A8A;" value="&lt;b&gt;PostgreSQL&lt;/b&gt;&lt;br&gt;(Catalog DB)" vertex="1">
+          <mxGeometry height="64" width="150" x="930" y="214" as="geometry" />
+        </mxCell>
+        <mxCell id="basket" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2563EB;strokeWidth=1;fontFamily=Helvetica;fontSize=12;fontColor=#1E3A8A;arcSize=12;" value="&lt;b&gt;Basket API&lt;/b&gt;" vertex="1">
+          <mxGeometry height="48" width="150" x="704" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="redis" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2563EB;strokeWidth=1;fontFamily=Helvetica;fontSize=12;fontColor=#1E3A8A;arcSize=12;" value="&lt;b&gt;Redis&lt;/b&gt;" vertex="1">
+          <mxGeometry height="48" width="150" x="930" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="ordering" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2563EB;strokeWidth=1;fontFamily=Helvetica;fontSize=12;fontColor=#1E3A8A;arcSize=12;" value="&lt;b&gt;Ordering API&lt;/b&gt;" vertex="1">
+          <mxGeometry height="48" width="150" x="704" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="orderingdb" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#FFFFFF;strokeColor=#2563EB;fontFamily=Helvetica;fontSize=11;fontColor=#1E3A8A;" value="&lt;b&gt;PostgreSQL&lt;/b&gt;&lt;br&gt;(Ordering DB)" vertex="1">
+          <mxGeometry height="64" width="150" x="930" y="372" as="geometry" />
+        </mxCell>
+        <mxCell id="rabbit" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2563EB;strokeWidth=1;fontFamily=Helvetica;fontSize=12;fontColor=#1E3A8A;arcSize=12;" value="&lt;b&gt;RabbitMQ&lt;/b&gt;" vertex="1">
+          <mxGeometry height="48" width="150" x="1150" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="mon" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;strokeWidth=2;arcSize=8;verticalAlign=top;" value="" vertex="1">
+          <mxGeometry height="168" width="850" x="680" y="492" as="geometry" />
+        </mxCell>
+        <mxCell id="mon-title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=12;fontColor=#14532D;fontFamily=Helvetica;" value="&lt;b&gt;Monitoring (namespace: monitoring)&lt;/b&gt;&lt;br&gt;kube-prometheus-stack" vertex="1">
+          <mxGeometry height="36" width="850" x="680" y="498" as="geometry" />
+        </mxCell>
+        <mxCell id="prom" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#16A34A;fontFamily=Helvetica;fontSize=12;fontColor=#14532D;arcSize=12;" value="&lt;b&gt;Prometheus&lt;/b&gt;" vertex="1">
+          <mxGeometry height="48" width="170" x="710" y="546" as="geometry" />
+        </mxCell>
+        <mxCell id="graf" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#16A34A;fontFamily=Helvetica;fontSize=12;fontColor=#14532D;arcSize=12;" value="&lt;b&gt;Grafana&lt;/b&gt;" vertex="1">
+          <mxGeometry height="48" width="170" x="960" y="546" as="geometry" />
+        </mxCell>
+        <mxCell id="mon-note" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;fontColor=#14532D;fontFamily=Helvetica;" value="Alertmanager, node-exporter,&lt;br&gt;kube-state-metrics&lt;br&gt;&lt;br&gt;Grafana via SSH tunnel + port-forward.&lt;br&gt;No public ingress." vertex="1">
+          <mxGeometry height="90" width="350" x="1160" y="538" as="geometry" />
+        </mxCell>
+        <mxCell id="dr" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#6B7280;strokeWidth=2;shadow=1;align=left;spacingLeft=16;spacingTop=8;fontFamily=Helvetica;fontSize=12;fontColor=#111827;arcSize=8;verticalAlign=top;" value="&lt;b&gt;Disaster recovery &amp;amp; operations&lt;/b&gt;&lt;br&gt;PostgreSQL SQL dumps + checksums&lt;br&gt;k3s state backup&lt;br&gt;Kubernetes rollout history + rollback runbook&lt;br&gt;Re-deploy previous image tag / manifest version&lt;br&gt;&lt;i&gt;Documented procedures; manual execution&lt;/i&gt;" vertex="1">
+          <mxGeometry height="150" width="900" x="32" y="740" as="geometry" />
+        </mxCell>
+        <mxCell id="future" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF9C3;strokeColor=#CA8A04;strokeWidth=2;dashed=1;dashPattern=8 8;shadow=0;align=left;spacingLeft=16;spacingTop=8;fontFamily=Helvetica;fontSize=12;fontColor=#854D0E;arcSize=8;verticalAlign=top;" value="&lt;b&gt;Future enhancements (not implemented yet)&lt;/b&gt;&lt;br&gt;Public Ingress + TLS (domain, cert-manager)&lt;br&gt;Separate production environment (VM/cluster or namespace + GitHub environments + approval gate)&lt;br&gt;Automated backup jobs + restore tests&lt;br&gt;External log aggregation (e.g., Loki/ELK)" vertex="1">
+          <mxGeometry height="150" width="610" x="960" y="740" as="geometry" />
+        </mxCell>
+        <mxCell id="footer" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;fontColor=#6B7280;fontFamily=Helvetica;" value="Solid boxes = implemented today. Dashed yellow box = roadmap only. Access path is SSH tunnel, not public Ingress." vertex="1">
+          <mxGeometry height="20" width="1200" x="32" y="900" as="geometry" />
+        </mxCell>
+        <mxCell id="e-push" edge="1" parent="1" source="dev" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563EB;strokeWidth=2;fontFamily=Helvetica;endArrow=classic;endFill=1;" target="repo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-push-l" connectable="0" parent="e-push" style="edgeLabel;html=1;align=center;fontSize=11;fontStyle=1;fontColor=#1E3A8A;fontFamily=Helvetica;labelBackgroundColor=#FFFFFF;" value="git push" vertex="1">
+          <mxGeometry relative="1" x="-0.05" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-repo-gha" edge="1" parent="1" source="repo" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#111827;strokeWidth=2;endArrow=classic;endFill=1;" target="gha">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-gha-ghcr" edge="1" parent="1" source="gha" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#111827;strokeWidth=2;endArrow=classic;endFill=1;" target="ghcr">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-deploy" edge="1" parent="1" source="gha" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#EA580C;strokeWidth=2;endArrow=classic;endFill=1;fontFamily=Helvetica;" target="vm103">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-deploy-l" connectable="0" parent="e-deploy" style="edgeLabel;html=1;align=center;fontSize=10;fontStyle=1;fontColor=#9A3412;fontFamily=Helvetica;labelBackgroundColor=#FFFFFF;" value="Deploy job&#xa;runs-on: self-hosted&#xa;vm103-k3s-runner&#xa;kubectl apply / helm upgrade" vertex="1">
+          <mxGeometry relative="1" x="0.15" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-ssh" edge="1" parent="1" source="dev" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#16A34A;strokeWidth=2;dashed=1;dashPattern=8 8;endArrow=classic;endFill=1;" target="vm103">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="137" y="700" />
+              <mxPoint x="660" y="700" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-ssh-l" connectable="0" parent="e-ssh" style="edgeLabel;html=1;align=center;fontSize=11;fontStyle=1;fontColor=#14532D;fontFamily=Helvetica;labelBackgroundColor=#FFFFFF;" value="SSH tunnel (ssh eshop.k3s) + kubectl port-forward" vertex="1">
+          <mxGeometry relative="1" x="-0.2" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-cat" edge="1" parent="1" source="catalog" style="endArrow=classic;html=1;strokeColor=#2563EB;strokeWidth=2;endFill=1;" target="catalogdb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-bask" edge="1" parent="1" source="basket" style="endArrow=classic;html=1;strokeColor=#2563EB;strokeWidth=2;endFill=1;" target="redis">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-ord-db" edge="1" parent="1" source="ordering" style="endArrow=classic;html=1;strokeColor=#2563EB;strokeWidth=2;endFill=1;" target="orderingdb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-ord-rmq" edge="1" parent="1" source="ordering" style="endArrow=classic;html=1;strokeColor=#2563EB;strokeWidth=2;endFill=1;" target="rabbit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-graf" edge="1" parent="1" source="graf" style="endArrow=classic;html=1;strokeColor=#16A34A;strokeWidth=2;endFill=1;" target="prom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-graf-l" connectable="0" parent="e-graf" style="edgeLabel;html=1;align=center;fontSize=10;fontColor=#14532D;fontFamily=Helvetica;labelBackgroundColor=#DCFCE7;" value="queries metrics" vertex="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
