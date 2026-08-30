@@ -1,6 +1,6 @@
 # eShop DevOps Project
 
-A DevOps engineering graduation project built around Microsoft's [dotnet/eShop](https://github.com/dotnet/eShop) reference application. It demonstrates containerization, Kubernetes on k3s, CI/CD, infrastructure work on Proxmox, monitoring, and disaster-recovery documentation for a real microservices system.
+A DevOps engineering graduation project built around Microsoft's [dotnet/eShop](https://github.com/dotnet/eShop) reference application. It demonstrates containerization, Kubernetes on k3s, CI/CD, Proxmox infrastructure, monitoring, and disaster-recovery documentation for a real microservices system.
 
 ## Overview
 
@@ -8,19 +8,21 @@ In-scope services:
 
 - **Catalog.API** — product catalog (PostgreSQL / pgvector)
 - **Basket.API** — shopping cart (Redis, gRPC)
-- **Ordering.API** — orders (PostgreSQL / pgvector, RabbitMQ)
+- **Ordering.API** — order processing (PostgreSQL / pgvector, RabbitMQ)
 
-Identity.API, WebApp, and background processors exist in the upstream eShop code. They are **not** required for the current k3s deployment. Ordering.API uses a placeholder `Identity__Url` so the process can start without Identity.API; token-protected flows are not claimed as working.
+The upstream repository also contains Identity.API, WebApp, and background processors. They are not included in the current Kubernetes deployment scope.
 
-Data stores:
+Ordering.API uses a placeholder `Identity__Url` so the service can start without Identity.API. Token-protected authentication flows are not claimed as working in the current k3s deployment.
+
+### Data stores and messaging
 
 - PostgreSQL with pgvector: `catalog-db`, `ordering-db`
-- Redis: basket
+- Redis: basket data
 - RabbitMQ: event bus
 
 ## Architecture
 
-The diagram shows the **current** environment on Proxmox, not a future production design.
+The diagram shows the **current implemented environment** on Proxmox. It does not represent an idealized production architecture.
 
 ![eShop DevOps architecture](docs/architecture/eshop-devops-architecture.png)
 
@@ -35,155 +37,273 @@ Editable source: [docs/architecture/eshop-devops-architecture.drawio](docs/archi
 ### Where it runs
 
 - Proxmox node: `B2C-DevOps-Inter-Bootcamp-MAY26-English-group1`
-- VM103: `farhad-eshop-k3s` (k3s), private IP `10.10.10.198` on `vmbr1`
-- Application manifests: `k8s/` (namespace `default`)
-- Monitoring: `kube-prometheus-stack` in namespace `monitoring`
+- VM103: `farhad-eshop-k3s` / hostname `eshopk3s`
+- VM103 private IP: `10.10.10.198` on `vmbr1`
+- Kubernetes: single-node k3s control plane
+- Application manifests: `k8s/`, namespace `default`
+- Monitoring: `kube-prometheus-stack`, namespace `monitoring`
 
 ### How code becomes images
 
-1. Push to `dev` or `main`.
-2. GitHub Actions (`.github/workflows/ci-cd.yml`) runs unit tests, then builds and pushes versioned images to GHCR (`:latest` and `:${{ github.sha }}`).
-3. Cluster apply uses the Kubernetes YAML in `k8s/` on VM103 (self-hosted runner / kubectl on the VM). Public Ingress is **not** enabled.
+1. Code is pushed to `dev` or `main`.
+2. GitHub Actions (`.github/workflows/ci-cd.yml`) runs Basket and Ordering unit tests.
+3. On pushes, GitHub Actions builds Catalog, Basket, and Ordering Docker images and pushes them to GHCR with `:latest` and `:<commit-sha>` tags.
+4. Kubernetes manifests in `k8s/` are applied on VM103 using `kubectl`.
+5. A private Traefik Ingress routes HTTP API traffic on VM103, but there is no public DNS, TLS, or public internet exposure.
 
-### How you access it today
+### How the environment is accessed
 
-- SSH jump: `ssh eshop-k3s` (see [docs/proxmox-infrastructure.md](docs/proxmox-infrastructure.md))
-- Grafana and APIs: SSH + `kubectl port-forward`
-- VM103 is not published on the internet
+- SSH jump access: `ssh eshop-k3s`
+- Grafana and Prometheus: SSH plus `kubectl port-forward`
+- Private API gateway routes: `/catalog`, `/basket`, and `/ordering` through Traefik on `10.10.10.198:80`
+- Verified Catalog and Ordering endpoints:
+  - `/catalog/health`
+  - `/ordering/health`
+  - `/catalog/api/catalog/items?api-version=1.0&pageSize=2`
+- VM103 has no public IP, public DNS name, or TLS configuration. Access from outside the private network uses SSH/jump-host access.
 
-### Future (not implemented)
+### Future enhancements (not implemented)
 
-- Public Ingress + TLS
-- Separate production cluster/environment with approval gates
-- Automated backup jobs and restore tests
-- External log aggregation
+- Public DNS, Ingress hardening, and TLS certificates
+- Separate production environment with deployment approval gates
+- Automated database / cluster backup jobs and restore tests
+- External centralized logging (for example Loki or ELK)
+- Kubernetes deployment of the WebApp storefront
 
-More detail: [docs/proxmox-infrastructure.md](docs/proxmox-infrastructure.md), [docs/dockerization.md](docs/dockerization.md).
+More detail: [Proxmox infrastructure](docs/proxmox-infrastructure.md) and [Dockerization guide](docs/dockerization.md).
 
 ## Tech Stack
 
-| Layer | What we use |
+| Layer | Technology |
 |---|---|
-| App | .NET 10, Catalog / Basket / Ordering APIs |
-| Data | PostgreSQL (pgvector), Redis 7, RabbitMQ 4 |
-| Containers | Dockerfiles per API, Docker Compose, GHCR |
-| Cluster | k3s on VM103, manifests in `k8s/` |
-| CI | GitHub Actions: test + image push (`.github/workflows/ci-cd.yml`) |
-| Monitoring | kube-prometheus-stack (Prometheus, Grafana, Alertmanager, exporters) |
-| Access | SSH ProxyJump, `kubectl port-forward` |
-| Local | .NET Aspire, Docker Desktop |
+| Application | .NET 10, Microsoft eShop reference application |
+| APIs in k3s scope | Catalog.API, Basket.API, Ordering.API |
+| Databases | PostgreSQL with pgvector |
+| Cache | Redis 7 |
+| Messaging | RabbitMQ 4 Management |
+| Containers | Dockerfiles, Docker Compose, GHCR |
+| Kubernetes | k3s single-node cluster on VM103 |
+| Ingress | Traefik (private HTTP routing) |
+| CI | GitHub Actions |
+| Monitoring | kube-prometheus-stack: Prometheus, Grafana, Alertmanager, kube-state-metrics, node-exporter |
+| Local orchestration | .NET Aspire |
+| Testing | .NET unit tests and Playwright files |
+| Access | SSH ProxyJump and `kubectl port-forward` |
 
-## Repository map
+## Repository Map
 
 | Path | Purpose |
 |---|---|
-| `src/` | Microservice source and Dockerfiles |
-| `k8s/` | Kubernetes Deployments/Services for APIs and infra |
-| `docker-compose.yml` | Local/dev-style full stack |
-| `docker-compose.prod.yml` | Production-like Compose overrides |
-| `.github/workflows/ci-cd.yml` | Project CI/CD (test + GHCR push) |
-| `docs/architecture/` | Architecture PNG + draw.io |
-| `docs/dockerization.md` | Dockerfile/Compose procedure and troubleshooting |
-| `docs/proxmox-infrastructure.md` | Host networking, DHCP/NAT, SSH |
-| `docs/disaster-recovery/card-29-rollback-procedure.md` | Rollback runbook |
-| `evidence/card-29-rollback/` | Rollback screenshots |
-| `docs/screenshots/` | Aspire / local run evidence |
+| `src/` | eShop source code, services, and Dockerfiles |
+| `tests/` | Unit and functional test projects |
+| `k8s/` | Kubernetes Deployments, Services, configuration, infrastructure, and Ingress-related manifests |
+| `docker-compose.yml` | Local/dev-style container stack |
+| `docker-compose.prod.yml` | Production-like Docker Compose override |
+| `.github/workflows/ci-cd.yml` | Project CI workflow: unit tests, Docker builds, GHCR pushes |
+| `docs/architecture/` | Architecture PNG and editable Draw.io source |
+| `docs/dockerization.md` | Dockerfile, Compose, verification, and troubleshooting guide |
+| `docs/proxmox-infrastructure.md` | Proxmox networking, DHCP/NAT, VM103, and SSH documentation |
+| `docs/disaster-recovery/` | Disaster recovery and rollback documentation |
+| `evidence/card-29-rollback/` | Kubernetes rollback evidence screenshots |
+| `docs/screenshots/` | Local Aspire and application evidence |
 
-## Setup — run locally (without Compose)
+## Local Development with .NET Aspire
 
-**Prerequisites:** .NET 10 SDK, Docker Desktop (Aspire starts Postgres/Redis/RabbitMQ).
+**Prerequisites:**
+
+- .NET 10 SDK
+- Docker Desktop running
+
+Run from the repository root:
 
 ```bash
 cd src/eShop.AppHost
 dotnet run
 ```
 
-Aspire Dashboard shows service status and logs. Screenshots: `docs/screenshots/`.
+The Aspire Dashboard displays service status, dependencies, logs, and endpoint links. Local evidence is available in `docs/screenshots/`.
 
 ## Docker Compose
 
-All three APIs run with PostgreSQL, Redis, and RabbitMQ. Procedure and failure log: [docs/dockerization.md](docs/dockerization.md).
+The local Docker Compose environment runs the three core APIs with PostgreSQL, Redis, and RabbitMQ. See the [Dockerization Guide](docs/dockerization.md) for Dockerfile design, dependency analysis, verification, and troubleshooting.
 
 | Aspect | Development | Production-like Compose |
 |---|---|---|
-| Config | `.env.development` (committed) | `.env.production` (gitignored; see `.env.production.example`) |
-| `ASPNETCORE_ENVIRONMENT` | `Development` | `Production` |
-| DB/RabbitMQ ports | Exposed on the host for debugging | Not exposed; Docker network only |
-| Restart | Manual | `unless-stopped` |
+| Configuration | `.env.development` (committed) | `.env.production` (not committed; see `.env.production.example`) |
+| Environment | `Development` | `Production` |
+| Database and RabbitMQ ports | Exposed on host for debugging | Internal Docker network only |
+| Restart policy | Manual | `unless-stopped` |
+
+Start the development environment:
 
 ```bash
 docker compose --env-file .env.development up --build -d
 ```
 
+Start the production-like Compose environment:
+
 ```bash
 docker compose --env-file .env.production -f docker-compose.yml -f docker-compose.prod.yml up --build -d
 ```
 
-Quick checks (Compose on localhost):
+Basic local checks:
 
 ```bash
 curl "http://localhost:8080/api/catalog/items?api-version=1.0&pageSize=5"
 curl -i "http://localhost:8082/health"
 ```
 
-Basket.API is gRPC (host port `8081`). HTTP/1 `curl` returning 400 is expected.
+Basket.API is a gRPC service on local port `8081`; an HTTP/1 `curl` response is not a valid Basket API functional test.
 
-## Kubernetes (VM103 k3s)
+## Kubernetes Deployment on VM103
 
-Manifests:
+VM103 (`farhad-eshop-k3s`) runs a private single-node k3s cluster. The node is `Ready` and uses private address `10.10.10.198`.
 
-- `k8s/infra.yaml` — catalog-db, ordering-db, Redis, RabbitMQ
-- `k8s/catalog-api.yaml` + `catalog-api-config.yaml`
-- `k8s/basket-api.yaml` + `basket-api-config.yaml`
-- `k8s/ordering-api.yaml` + `ordering-api-config.yaml`
+Current application deployments in namespace `default`:
 
-Images are pulled from GHCR tags produced by CI. Access remains SSH + port-forward. Do not expose NodePorts or Ingress to the public internet without a separate hardening card.
+- `catalog-api`
+- `basket-api`
+- `ordering-api`
+- `catalog-db`
+- `ordering-db`
+- `redis`
+- `rabbitmq`
+
+Manifest files:
+
+- `k8s/infra.yaml` — catalog database, ordering database, Redis, RabbitMQ
+- `k8s/catalog-api.yaml` and `k8s/catalog-api-config.yaml`
+- `k8s/basket-api.yaml` and `k8s/basket-api-config.yaml`
+- `k8s/ordering-api.yaml` and `k8s/ordering-api-config.yaml`
+
+The API workloads currently pull images from:
+
+```text
+ghcr.io/farhad-mm/eshop-devops-project/catalog-api:latest
+ghcr.io/farhad-mm/eshop-devops-project/basket-api:latest
+ghcr.io/farhad-mm/eshop-devops-project/ordering-api:latest
+```
+
+The current Traefik Ingress is private and routes:
+
+```text
+/catalog  → catalog-api:8080
+/basket   → basket-api:8080
+/ordering → ordering-api:8080
+```
+
+Do not expose VM103 or the Traefik service to the public internet without a dedicated hardening plan, firewall policy, DNS, and TLS configuration.
 
 ## CI/CD
 
 Workflow: [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml)
 
-| Job | When | What |
+### Triggers
+
+- Push to `dev` or `main`
+- Pull requests targeting `main`
+
+### Current jobs
+
+| Job | Runs when | Purpose |
 |---|---|---|
-| `build-and-test` | push/PR | `dotnet test` for Basket and Ordering unit tests |
-| `docker-build-push` | push to `dev` or `main` only | Build three API images, push to `ghcr.io/<repo>/…:latest` and `:<sha>` |
+| `build-and-test` | Push and pull request | Restores and tests Basket.UnitTests and Ordering.UnitTests using .NET 10 |
+| `docker-build-push` | Push only | Builds and pushes Catalog, Basket, and Ordering images to GHCR |
 
-Upstream eShop workflows (`pr-validation.yml`, `playwright.yml`, `secrets-scan.yml`, …) are still in `.github/workflows/` from the Microsoft template.
+Each API image is pushed with:
 
-**Not in `ci-cd.yml` today:** Trivy scan job, and a `runs-on: self-hosted` deploy job. Cluster updates are done on VM103 with kubectl/Helm against `k8s/`. Adding those jobs is a follow-up, not current behaviour.
+```text
+:latest
+:<github-commit-sha>
+```
+
+### Current CI/CD scope
+
+The implemented workflow provides test, container build, and GHCR publishing.
+
+The following items are not implemented in `.github/workflows/ci-cd.yml` yet:
+
+- Trivy image scanning job
+- GitHub Actions deploy job using `runs-on: self-hosted`
+- Automated Kubernetes rollout to VM103
+- GitHub Environments / production approval gates
+- Separate production deployment pipeline
+
+Kubernetes rollout is currently performed on VM103 with `kubectl` using the manifests in `k8s/`.
 
 ## Monitoring
 
-`kube-prometheus-stack` is installed on the VM103 k3s cluster in namespace `monitoring` (Prometheus, Grafana, Alertmanager, kube-state-metrics, node-exporter). Grafana is reached with SSH + `kubectl port-forward` only.
+The `kube-prometheus-stack` Helm chart is deployed in the `monitoring` namespace.
 
-## Security (honest scope)
+Installed monitoring components:
 
-- GHCR packages; Actions uses `GITHUB_TOKEN` to push
-- `secrets-scan.yml` exists from the template
-- Kubernetes Secrets should be used for real credentials; `k8s/infra.yaml` still contains **dev** database/RabbitMQ values and must not be treated as production
-- No public Ingress/TLS on VM103
-- SSH is key-based via ProxyJump (see Proxmox doc)
+- Prometheus
+- Grafana
+- Alertmanager
+- Prometheus Operator
+- kube-state-metrics
+- node-exporter
 
-## Proxmox and SSH
+Helm releases verified on VM103:
 
-Recorded in [docs/proxmox-infrastructure.md](docs/proxmox-infrastructure.md):
+```text
+monitoring   monitoring   kube-prometheus-stack
+traefik      kube-system  traefik
+traefik-crd  kube-system  traefik-crd
+```
 
-- Node `B2C-DevOps-Inter-Bootcamp-MAY26-English-group1`
-- VMs on `vmbr1` (`10.10.10.0/24`), NAT out via `vmbr0`
-- VM103 reserved at `10.10.10.198`
-- Host-level DHCP (dnsmasq) and persistent NAT/IP forwarding
-- SSH host alias `eshop-k3s` (ProxyJump through the Proxmox host)
+Prometheus collects Kubernetes, node, pod, workload, CPU, and memory metrics. Grafana provides dashboards and is accessed securely through SSH plus `kubectl port-forward`; it is not exposed publicly.
+
+## Security
+
+Current security scope:
+
+- GitHub Actions uses `GITHUB_TOKEN` to authenticate to GHCR.
+- Project repository includes a `secrets-scan.yml` workflow inherited from the upstream template.
+- SSH access uses keys and ProxyJump through the Proxmox host.
+- Application services and data stores are private Kubernetes `ClusterIP` Services.
+- Traefik is private on VM103; public DNS and TLS are not configured.
+- `k8s/infra.yaml` contains **development-only** database and RabbitMQ values. Those values must not be used for production.
+- Production credentials should be stored in Kubernetes Secrets or another dedicated secret-management solution before public/production deployment.
+
+## Proxmox Infrastructure and SSH
+
+See [docs/proxmox-infrastructure.md](docs/proxmox-infrastructure.md) for the networking troubleshooting runbook and configuration details.
+
+Key facts:
+
+- Proxmox node: `B2C-DevOps-Inter-Bootcamp-MAY26-English-group1`
+- VM network: `vmbr1`, subnet `10.10.10.0/24`
+- NAT egress: `vmbr0`
+- VM103 address reservation: `10.10.10.198`
+- DHCP: dnsmasq scoped to `vmbr1`
+- SSH command: `ssh eshop-k3s`
+- VM103 resources: 4 CPU cores and 8 GB RAM
 
 ## Disaster Recovery
 
-- Networking runbook: [docs/proxmox-infrastructure.md](docs/proxmox-infrastructure.md)
-- Application rollback: [docs/disaster-recovery/card-29-rollback-procedure.md](docs/disaster-recovery/card-29-rollback-procedure.md)
-- Evidence: `evidence/card-29-rollback/`
-- Preferred rollback: redeploy a known-good **commit-SHA** image from Git/GHCR
-- Emergency: `kubectl rollout undo`, then reconcile Git
+- Network recovery runbook: [docs/proxmox-infrastructure.md](docs/proxmox-infrastructure.md)
+- Kubernetes rollback procedure: [Card 29 rollback procedure](docs/disaster-recovery/card-29-rollback-procedure.md)
+- Rollback evidence: `evidence/card-29-rollback/`
 
-Database dump / k3s-state backup procedures may exist from Card 28 in the report; there is **no** `docs/disaster-recovery/card-28*` file in this repository yet.
+The preferred application rollback method is to redeploy a known-good image version from Git/GHCR. An emergency `kubectl rollout undo` method is documented and was tested as a dry run for Catalog, Basket, and Ordering workloads.
+
+Database dumps, k3s state backups, and SHA256 integrity checks are part of the wider project recovery plan. Automated backup scheduling and restore testing remain future improvements.
+
+## Committee Demo Scope
+
+The live Kubernetes demonstration shows:
+
+1. VM103 k3s cluster health and all running pods.
+2. Private Traefik routing for Catalog, Basket, and Ordering APIs.
+3. Catalog and Ordering health checks through the private Ingress.
+4. Live Catalog API data.
+5. Prometheus/Grafana monitoring through SSH and port-forward.
+6. GitHub Actions test/build workflow and GHCR images.
+7. Kubernetes rollback documentation and evidence.
+
+The eShop WebApp/storefront has been demonstrated locally through .NET Aspire and Docker Compose. It is not currently deployed as a Kubernetes workload on VM103, so the committee demo will not claim that it is served from the k3s cluster.
 
 ## Acknowledgements
 
-Built on Microsoft's [dotnet/eShop](https://github.com/dotnet/eShop). Sample catalog data is fictional (originally GPT-3.5-Turbo / DALL·E 3 in the upstream project).
+This project is built on Microsoft's [dotnet/eShop](https://github.com/dotnet/eShop) reference application. Sample catalog data is fictional and originates from the upstream reference project.
