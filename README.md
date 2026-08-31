@@ -209,6 +209,7 @@ Workflow: [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml)
 |---|---|---|
 | `build-and-test` | Push and pull request | Restores and tests Basket.UnitTests and Ordering.UnitTests using .NET 10 |
 | `docker-build-push` | Push only | Builds and pushes Catalog, Basket, and Ordering images to GHCR |
+| `deploy` | Push only, after image build | Runs on the VM103 self-hosted runner, applies Kubernetes manifests, waits for API rollouts, and performs in-cluster smoke tests |
 
 Each API image is pushed with:
 
@@ -219,17 +220,24 @@ Each API image is pushed with:
 
 ### Current CI/CD scope
 
-The implemented workflow provides test, container build, and GHCR publishing.
+The implemented workflow provides tests, container build, GHCR publishing, image vulnerability scanning, and automated deployment to the private VM103 k3s cluster.
 
-The following items are not implemented in `.github/workflows/ci-cd.yml` yet:
+Implemented controls:
 
-- Trivy image scanning job
-- GitHub Actions deploy job using `runs-on: self-hosted`
-- Automated Kubernetes rollout to VM103
-- GitHub Environments / production approval gates
-- Separate production deployment pipeline
+- Trivy scans commit-specific Catalog, Basket, and Ordering images for HIGH and CRITICAL known vulnerabilities.
+- Gitleaks runs in a separate GitHub Actions workflow and scans repository files plus complete Git history for accidentally committed secrets.
+- The `deploy` job runs on `vm103-k3s-runner`.
+- The deploy job applies manifests in `k8s/`, waits for Catalog, Basket, and Ordering rollouts, and runs in-cluster health smoke tests.
+- A workflow fails if a required test, rollout, or smoke test fails.
 
-Kubernetes rollout is currently performed on VM103 with `kubectl` using the manifests in `k8s/`.
+Current limitations:
+
+- Trivy runs in reporting mode, so findings do not currently block deployment.
+- No automated dependency-update workflow is configured.
+- No GitHub Environment approval gate is configured.
+- The WebApp/storefront is not deployed to k3s through this pipeline.
+
+For full workflow and verification details, see [CI/CD documentation](docs/cicd-as-is.md).
 
 ## Monitoring
 
@@ -254,6 +262,8 @@ traefik-crd  kube-system  traefik-crd
 
 Prometheus collects Kubernetes, node, pod, workload, CPU, and memory metrics. Grafana provides dashboards and is accessed securely through SSH plus `kubectl port-forward`; it is not exposed publicly.
 
+For monitoring components, private access, dashboards, and current limitations, see [Monitoring documentation](docs/monitoring-as-is.md).
+
 ## Security
 
 Current security scope:
@@ -265,6 +275,8 @@ Current security scope:
 - Traefik is private on VM103; public DNS and TLS are not configured.
 - `k8s/infra.yaml` contains **development-only** database and RabbitMQ values. Those values must not be used for production.
 - Production credentials should be stored in Kubernetes Secrets or another dedicated secret-management solution before public/production deployment.
+
+For implemented security controls, Trivy/Gitleaks behaviour, and current hardening gaps, see [Security documentation](docs/security-as-is.md).
 
 ## Proxmox Infrastructure and SSH
 
@@ -282,17 +294,21 @@ Key facts:
 
 ## Disaster Recovery
 
-- Network recovery runbook: [docs/proxmox-infrastructure.md](docs/proxmox-infrastructure.md)
+- Network and VM recovery runbook: [docs/proxmox-infrastructure.md](docs/proxmox-infrastructure.md)
+- Backup strategy and verification: Card 28 covers k3s state, PostgreSQL logical dumps, repository configuration, and VM-level recovery.
 - Kubernetes rollback procedure: [Card 29 rollback procedure](docs/disaster-recovery/card-29-rollback-procedure.md)
+- Container and node recovery procedure: [Card 32 recovery runbook](docs/disaster-recovery/card-32-container-node-recovery.md)
 - Rollback evidence: `evidence/card-29-rollback/`
 
 The preferred application rollback method is to redeploy a known-good image version from Git/GHCR. An emergency `kubectl rollout undo` method is documented and was tested as a dry run for Catalog, Basket, and Ordering workloads.
+
+For runtime pod and node failures, Card 32 documents diagnosis, Kubernetes self-healing, controlled Deployment restart, rollout verification, and private API health checks.
 
 Database dumps, k3s state backups, and SHA256 integrity checks are part of the wider project recovery plan. Automated backup scheduling and restore testing remain future improvements.
 
 ## Committee Demo Scope
 
-The live Kubernetes demonstration shows:
+The live Kubernetes demonstration follows the [K3s deployment and committee demo access guide](docs/k3s-deployment-and-demo-access.md) and shows:
 
 1. VM103 k3s cluster health and all running pods.
 2. Private Traefik routing for Catalog, Basket, and Ordering APIs.
